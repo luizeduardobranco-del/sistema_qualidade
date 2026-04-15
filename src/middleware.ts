@@ -19,21 +19,17 @@ export async function middleware(request: NextRequest) {
   if (!url || !anonKey) return NextResponse.next();
 
   // Keep Supabase session in sync and enforce auth for protected routes.
-  let response = NextResponse.next({ request });
+  const response = NextResponse.next({ request });
   const supabase = createServerClient(url, anonKey, {
     cookies: {
       get(name) {
         return request.cookies.get(name)?.value;
       },
       set(name, value, options) {
-        request.cookies.set({ name, value, ...options });
-        response = NextResponse.next({ request });
-        response.cookies.set({ name, value, ...options });
+        response.cookies.set(name, value, options);
       },
       remove(name, options) {
-        request.cookies.set({ name, value: "", ...options, maxAge: 0 });
-        response = NextResponse.next({ request });
-        response.cookies.set({ name, value: "", ...options, maxAge: 0 });
+        response.cookies.set(name, "", { ...options, maxAge: 0 });
       }
     }
   });
@@ -47,9 +43,3 @@ export async function middleware(request: NextRequest) {
   }
 
   return response;
-}
-
-export const config = {
-  matcher: ["/((?!.*\\.).*)"]
-};
-
