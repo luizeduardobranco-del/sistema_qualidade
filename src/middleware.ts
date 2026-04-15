@@ -18,20 +18,24 @@ export async function middleware(request: NextRequest) {
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !anonKey) return NextResponse.next();
 
-  // Keep Supabase session in sync and enforce auth for protected routes.
-  const response = NextResponse.next({ request });
+  // API correta para @supabase/ssr >= 0.5.0: usa getAll/setAll
+  let response = NextResponse.next({ request });
+
   const supabase = createServerClient(url, anonKey, {
     cookies: {
-      get(name) {
-        return request.cookies.get(name)?.value;
+      getAll() {
+        return request.cookies.getAll();
       },
-      set(name, value, options) {
-        response.cookies.set(name, value, options);
+      setAll(cookiesToSet) {
+        cookiesToSet.forEach(({ name, value }) =>
+          request.cookies.set(name, value)
+        );
+        response = NextResponse.next({ request });
+        cookiesToSet.forEach(({ name, value, options }) =>
+          response.cookies.set(name, value, options)
+        );
       },
-      remove(name, options) {
-        response.cookies.set(name, "", { ...options, maxAge: 0 });
-      }
-    }
+    },
   });
 
   const { data } = await supabase.auth.getUser();
