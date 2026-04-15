@@ -52,8 +52,8 @@ export default function RncNewPage() {
         <section className="card" style={{ gridColumn: "span 5" }}>
           <h2>Regras rapidas</h2>
           <div className="muted" style={{ fontSize: 13, lineHeight: 1.5 }}>
-            Gravidade Alta/Critica exige RACP para encerrar. O fluxo recomendado eh: Triagem -> Investigacao -> RACP ->
-            Execucao -> Validacao -> Encerramento.
+            Gravidade Alta/Critica exige RACP para encerrar. O fluxo recomendado eh: Triagem -&gt; Investigacao -&gt; RACP
+            -&gt; Execucao -&gt; Validacao -&gt; Encerramento.
           </div>
         </section>
       </div>
