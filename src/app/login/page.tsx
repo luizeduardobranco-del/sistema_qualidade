@@ -1,11 +1,11 @@
 // Componente de SERVIDOR — aqui o export dynamic é respeitado pelo Next.js.
 // O formulário (cliente) é carregado via next/dynamic com ssr:false,
 // o que impede qualquer tentativa de pré-renderização do código client-side.
-import dynamic from "next/dynamic";
+import nextDynamic from "next/dynamic";
 
 export const dynamic = "force-dynamic";
 
-const LoginClient = dynamic(() => import("./LoginClient"), { ssr: false });
+const LoginClient = nextDynamic(() => import("./LoginClient"), { ssr: false });
 
 export default function LoginPage() {
   return (
