@@ -4,46 +4,51 @@ import { createServerClient } from "@supabase/ssr";
 const PUBLIC_PATHS = ["/", "/login", "/api/health"];
 
 function isPublicPath(pathname: string) {
-  if (PUBLIC_PATHS.includes(pathname)) return true;
-  if (pathname.startsWith("/_next/")) return true;
-  if (pathname.startsWith("/favicon")) return true;
-  return false;
+  return (
+    PUBLIC_PATHS.includes(pathname) ||
+    pathname.startsWith("/_next/") ||
+    pathname.startsWith("/favicon")
+  );
 }
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  if (isPublicPath(pathname)) return NextResponse.next();
 
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !anonKey) return NextResponse.next();
+  if (isPublicPath(pathname)) {
+    return NextResponse.next();
+  }
 
-  // API correta para @supabase/ssr >= 0.5.0: usa getAll/setAll
-  let response = NextResponse.next({ request });
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  const supabase = createServerClient(url, anonKey, {
+  if (!supabaseUrl || !supabaseKey) {
+    return NextResponse.next();
+  }
+
+  const response = NextResponse.next({ request });
+
+  const supabase = createServerClient(supabaseUrl, supabaseKey, {
     cookies: {
       getAll() {
         return request.cookies.getAll();
       },
       setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value }) =>
-          request.cookies.set(name, value)
-        );
-        response = NextResponse.next({ request });
-        cookiesToSet.forEach(({ name, value, options }) =>
-          response.cookies.set(name, value, options)
-        );
+        cookiesToSet.forEach(({ name, value, options }) => {
+          response.cookies.set(name, value, options);
+        });
       },
     },
   });
 
-  const { data } = await supabase.auth.getUser();
-  if (!data.user) {
-    const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = "/login";
-    redirectUrl.searchParams.set("redirectTo", pathname);
-    return NextResponse.redirect(redirectUrl);
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    url.searchParams.set("redirectTo", pathname);
+    return NextResponse.redirect(url);
   }
 
   return response;
