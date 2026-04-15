@@ -1,12 +1,13 @@
-import { createClient } from "@supabase/supabase-js";
+import { createBrowserClient } from "@supabase/ssr";
 
+// Usa createBrowserClient do @supabase/ssr para que a sessão
+// seja armazenada em COOKIES (e não em localStorage).
+// Isso é obrigatório para que o middleware do servidor consiga
+// ler a sessão e autenticar o usuário corretamente.
 export function getSupabaseBrowserClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "https://placeholder.supabase.co";
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "placeholder";
 
-  // Durante o build/prerender as variáveis podem não estar disponíveis.
-  // O cliente é criado mesmo assim; o erro só aparecerá em runtime se
-  // as variáveis realmente estiverem ausentes no servidor de produção.
-  return createClient(url || "https://placeholder.supabase.co", anonKey || "placeholder");
+  return createBrowserClient(url, anonKey);
 }
 
