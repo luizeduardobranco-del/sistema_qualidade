@@ -35,6 +35,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "missing_fields" }, { status: 400 });
   }
 
+  // Garante que o usuário existe na tabela `usuarios` antes de criar a RNC.
+  // Sem isso, a chave estrangeira created_by rejeita o insert.
+  const userEmail = authData.user.email ?? "";
+  const userName = authData.user.user_metadata?.name ?? userEmail.split("@")[0];
+  await supabase.from("usuarios").upsert(
+    { user_id: authData.user.id, nome: userName, email: userEmail },
+    { onConflict: "user_id", ignoreDuplicates: true }
+  );
+
   const { data: inserted, error: insertError } = await supabase
     .from("rnc")
     .insert({
@@ -45,14 +54,14 @@ export async function POST(req: Request) {
       status: "Aberta",
       area_responsavel_id,
       responsavel_user_id,
-      created_by: authData.user.id
+      created_by: authData.user.id,
     })
     .select("id,status,data_abertura")
     .single();
 
   if (insertError) return NextResponse.json({ error: insertError.message }, { status: 400 });
 
-  // Start initial-response SLA clock.
+  // Inicia o clock de SLA de resposta inicial.
   await supabase.from("sla_log").insert({ rnc_id: inserted.id, etapa: "RespostaInicial" });
 
   return NextResponse.json(inserted, { status: 201 });
